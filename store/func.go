@@ -133,6 +133,37 @@ func (this AvgFunction) Compute(L *SafeLinkedList) (vs []*model.HistoryData, lef
 	return
 }
 
+// increase(#3)
+type IncreaseFunction struct {
+	Function
+	Limit      int
+	Operator   string
+	RightValue float64
+}
+
+func (this IncreaseFunction) Compute(L *SafeLinkedList) (vs []*model.HistoryData, leftValue float64, isTriggered bool, isEnough bool) {
+	vs, isEnough = L.HistoryData(this.Limit)
+	if !isEnough {
+		return
+	}
+
+	// vs[0] is the latest datapoint
+	isTriggered = false
+	for i := 0; i < (this.Limit - 1); i++ {
+		current := vs[i].Value
+		previous := vs[i+1].Value
+		leftValue = current - previous
+		current_satisfied := checkIsTriggered(leftValue, this.Operator, this.RightValue)
+		if !current_satisfied {
+			return
+		}
+	}
+	// 全部数据满足表达式，返回最新的值
+	leftValue = vs[0].Value
+	isTriggered = true
+	return
+}
+
 type DiffFunction struct {
 	Function
 	Limit      int
@@ -229,6 +260,8 @@ func ParseFuncFromString(str string, operator string, rightValue float64) (fn Fu
 		fn = &DiffFunction{Limit: int(limit), Operator: operator, RightValue: rightValue}
 	case "pdiff":
 		fn = &PDiffFunction{Limit: int(limit), Operator: operator, RightValue: rightValue}
+	case "increase":
+		fn = &IncreaseFunction{Limit: int(limit), Operator: operator, RightValue: rightValue}
 	default:
 		err = fmt.Errorf("not_supported_method")
 	}
