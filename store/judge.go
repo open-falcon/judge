@@ -6,6 +6,9 @@ import (
 	"github.com/open-falcon/common/model"
 	"github.com/open-falcon/judge/g"
 	"log"
+	"regexp"
+	"strings"
+	"sort"
 )
 
 func Judge(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
@@ -26,8 +29,16 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 		// 比如lg-dinp-docker01.bj配置了两个proc.num的策略，一个name=docker，一个name=agent
 		// 所以此处要排除掉一部分
 		related := true
+		expression := false
 		for tagKey, tagVal := range s.Tags {
 			if myVal, exists := firstItem.Tags[tagKey]; !exists || myVal != tagVal {
+				if exists && strings.HasPrefix(tagVal,"$(") && strings.HasSuffix(tagVal,")") {
+					matched, err := regexp.MatchString(tagVal[2:len(tagVal)-1],firstItem.Tags[tagKey])
+					if err == nil && matched {
+						expression = true
+						continue
+					}
+				}
 				related = false
 				break
 			}
@@ -37,11 +48,23 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 			continue
 		}
 
-		judgeItemWithStrategy(L, s, firstItem, now)
+		if expression {
+			s.Tags = firstItem.Tags
+			var tagstrings  []string
+			for tagkey,tagval := range firstItem.Tags {
+				tagstrings = append(tagstrings,tagkey +"="+ tagval)
+			}
+			sort.Strings(tagstrings)
+			tagJoinStirng := strings.Join(tagstrings,"-")
+			judgeItemWithStrategy(L, s, firstItem, now, tagJoinStirng)
+			continue
+		}
+
+		judgeItemWithStrategy(L, s, firstItem, now,"")
 	}
 }
 
-func judgeItemWithStrategy(L *SafeLinkedList, strategy model.Strategy, firstItem *model.JudgeItem, now int64) {
+func judgeItemWithStrategy(L *SafeLinkedList, strategy model.Strategy, firstItem *model.JudgeItem, now int64,tagJoinString string) {
 	fn, err := ParseFuncFromString(strategy.Func, strategy.Operator, strategy.RightValue)
 	if err != nil {
 		log.Printf("[ERROR] parse func %s fail: %v. strategy id: %d", strategy.Func, err, strategy.Id)
@@ -54,7 +77,7 @@ func judgeItemWithStrategy(L *SafeLinkedList, strategy model.Strategy, firstItem
 	}
 
 	event := &model.Event{
-		Id:         fmt.Sprintf("s_%d_%s", strategy.Id, firstItem.PrimaryKey()),
+		Id:         fmt.Sprintf("s_%d_%s_%s", strategy.Id,tagJoinString, firstItem.PrimaryKey()),
 		Strategy:   &strategy,
 		Endpoint:   firstItem.Endpoint,
 		LeftValue:  leftValue,
