@@ -20,7 +20,8 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 	if !exists {
 		return
 	}
-
+	
+	var match_strategies []*model.Strategy
 	for _, s := range strategies {
 		// 因为key仅仅是endpoint和metric，所以得到的strategies并不一定是与当前judgeItem相关的
 		// 比如lg-dinp-docker01.bj配置了两个proc.num的策略，一个name=docker，一个name=agent
@@ -36,8 +37,16 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 		if !related {
 			continue
 		}
-
-		judgeItemWithStrategy(L, s, firstItem, now)
+		
+		// if parent template only have metric without tags, this strategy will pass thru; 
+		// and then child template have detail metric and tags, also matched; 
+		// so we have at least two strategies when iterator the strategies, the last one is what we want.
+		match_stragies = append(match_strategies, &s)
+	}
+	
+	if len(match_strategies) > 0 {
+	 	// chose the last one strategy in match_strategies.
+	 	judgeItemWithStrategy(L, *match_strategies[len(match_stragies) - 1], firstItem, now)
 	}
 }
 
