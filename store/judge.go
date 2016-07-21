@@ -3,9 +3,10 @@ package store
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+
 	"github.com/open-falcon/common/model"
 	"github.com/open-falcon/judge/g"
-	"log"
 )
 
 func Judge(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
@@ -20,7 +21,7 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 	if !exists {
 		return
 	}
-	
+
 	var match_strategies []*model.Strategy
 	for _, s := range strategies {
 		// 因为key仅仅是endpoint和metric，所以得到的strategies并不一定是与当前judgeItem相关的
@@ -37,16 +38,16 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 		if !related {
 			continue
 		}
-		
-		// if parent template only have metric without tags, this strategy will pass thru; 
-		// and then child template have detail metric and tags, also matched; 
+
+		// if parent template only have metric without tags, this strategy will pass thru;
+		// and then child template have detail metric and tags, also matched;
 		// so we have at least two strategies when iterator the strategies, the last one is what we want.
-		match_stragies = append(match_strategies, &s)
+		match_strategies = append(match_strategies, &s)
 	}
-	
+
 	if len(match_strategies) > 0 {
-	 	// chose the last one strategy in match_strategies.
-	 	judgeItemWithStrategy(L, *match_strategies[len(match_stragies) - 1], firstItem, now)
+		// chose the last one strategy in match_strategies.
+		judgeItemWithStrategy(L, *match_strategies[len(match_strategies)-1], firstItem, now)
 	}
 }
 
