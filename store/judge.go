@@ -3,9 +3,10 @@ package store
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+
 	"github.com/open-falcon/common/model"
 	"github.com/open-falcon/judge/g"
-	"log"
 )
 
 func Judge(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
@@ -21,6 +22,7 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 		return
 	}
 
+	var match_strategies []model.Strategy
 	for _, s := range strategies {
 		// 因为key仅仅是endpoint和metric，所以得到的strategies并不一定是与当前judgeItem相关的
 		// 比如lg-dinp-docker01.bj配置了两个proc.num的策略，一个name=docker，一个name=agent
@@ -37,7 +39,21 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 			continue
 		}
 
-		judgeItemWithStrategy(L, s, firstItem, now)
+		// if parent template only have metric without tags, this strategy will pass thru;
+		// and then child template have detail metric and tags, also matched;
+		// so we have at least two strategies when iterator the strategies, select what we want.
+		match_strategies = append(match_strategies, s)
+	}
+
+	if len(match_strategies) > 0 {
+		// select the max length tags strategy
+		var max_tag_strategy model.Strategy = match_strategies[0]
+		for _, strategy := range match_strategies {
+			if len(strategy.Tags) > len(max_tag_strategy.Tags) {
+				max_tag_strategy = strategy
+			}
+		}
+		judgeItemWithStrategy(L, max_tag_strategy, firstItem, now)
 	}
 }
 
