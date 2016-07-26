@@ -41,13 +41,19 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 
 		// if parent template only have metric without tags, this strategy will pass thru;
 		// and then child template have detail metric and tags, also matched;
-		// so we have at least two strategies when iterator the strategies, the last one is what we want.
+		// so we have at least two strategies when iterator the strategies, select what we want.
 		match_strategies = append(match_strategies, s)
 	}
 
 	if len(match_strategies) > 0 {
-		// chose the last one strategy in match_strategies.
-		judgeItemWithStrategy(L, match_strategies[len(match_strategies)-1], firstItem, now)
+		// select the max length tags strategy
+		var max_tag_strategy model.Strategy = match_strategies[0]
+		for _, strategy := range match_strategies {
+			if len(strategy.Tags) > len(max_tag_strategy.Tags) {
+				max_tag_strategy = strategy
+			}
+		}
+		judgeItemWithStrategy(L, max_tag_strategy, firstItem, now)
 	}
 }
 
