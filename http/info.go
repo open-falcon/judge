@@ -24,6 +24,31 @@ func configInfoRoutes() {
 		RenderDataJson(w, m[urlParam])
 	})
 
+	//e.g. /eventall/
+	http.HandleFunc("/eventall/", func(w http.ResponseWriter, r *http.Request) {
+		m := g.LastEvents.Getall()
+		RenderDataJson(w, m)
+	})
+
+	//e.g. /event/eventid
+	http.HandleFunc("/event/", func(w http.ResponseWriter, r *http.Request) {
+		urlParam := r.URL.Path[len("/event/"):]
+		m,_ := g.LastEvents.Get(urlParam)
+		RenderDataJson(w, m)
+	})
+
+	//e.g. /postevent/eventid
+	http.HandleFunc("/postevent/", func(w http.ResponseWriter, r *http.Request) {
+		urlParam := r.URL.Path[len("/postevent/"):]
+		m,exists:= g.LastEvents.Get(urlParam)
+		if exists {
+			m.Status="OK"
+			store.Send(m)
+		}
+		RenderDataJson(w, m)
+	})
+
+
 	http.HandleFunc("/count", func(w http.ResponseWriter, r *http.Request) {
 		sum := 0
 		arr := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"}

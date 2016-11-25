@@ -82,6 +82,12 @@ func sendEvent(event *model.Event) {
 	rc.Do("LPUSH", redisKey, string(bs))
 }
 
+//store.Send()
+func Send(event *model.Event){
+	sendEvent(event)
+}
+
+
 func CheckExpression(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 	keys := buildKeysFromMetricAndTags(firstItem)
 	if len(keys) == 0 {
