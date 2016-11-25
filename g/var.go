@@ -74,3 +74,10 @@ func (this *SafeEventMap) Set(key string, event *model.Event) {
 	defer this.Unlock()
 	this.M[key] = event
 }
+
+//
+func (this *SafeEventMap) Getall() map[string]*model.Event {
+	this.RLock()
+	defer this.RUnlock()
+	return this.M
+}
