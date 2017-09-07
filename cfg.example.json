@@ -13,7 +13,8 @@
     "hbs": {
         "servers": ["127.0.0.1:6030"],
         "timeout": 300,
-        "interval": 60
+        "interval": 60,
+		"callTimeout": 5
     },
     "alarm": {
         "enabled": true,
